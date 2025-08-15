@@ -1,0 +1,12 @@
+{
+  "name": "ytdlp-cookie-server",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node api/index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "yt-dlp-wrap": "^2.3.12",
+    "uuid": "^9.0.1"
+  }
+}
