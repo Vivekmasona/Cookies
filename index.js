@@ -1,35 +1,21 @@
-import express from "express";
-import YTDlpWrap from "yt-dlp-wrap";
-import { v4 as uuidv4 } from "uuid";
-import fs from "fs";
-import path from "path";
-import os from "os";
+const express = require("express");
+const { exec } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
-const ytDlp = new YTDlpWrap();
 
-app.get("/cookies", async (req, res) => {
-  try {
-    const tempFile = path.join(os.tmpdir(), `cookies-${uuidv4()}.txt`);
+app.get("/cookies", (req, res) => {
+  const tempFile = path.join(__dirname, `cookies-${uuidv4()}.txt`);
 
-    // yt-dlp command to export cookies (replace with actual login if needed)
-    await ytDlp.exec([
-      "--cookies-from-browser",
-      "chrome",
-      "--dump-cookies",
-      tempFile
-    ]);
+  exec(`yt-dlp --cookies-from-browser chrome --dump-cookies ${tempFile}`, (err) => {
+    if (err) return res.status(500).send("Error generating cookies");
 
-    if (fs.existsSync(tempFile)) {
-      res.setHeader("Content-Type", "text/plain");
-      fs.createReadStream(tempFile).pipe(res);
-    } else {
-      res.status(500).send("Cookies file not generated");
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error generating cookies file");
-  }
+    fs.createReadStream(tempFile)
+      .on("end", () => fs.unlinkSync(tempFile))
+      .pipe(res);
+  });
 });
 
 app.listen(3000, () => console.log("Server running"));
