@@ -1,43 +1,27 @@
+import express from "express";
 import puppeteer from "puppeteer";
-import fs from "fs";
 
-async function getYoutubeCookies() {
-  const browser = await puppeteer.launch({
-    headless: false, // login ke liye visible rakho
-  });
+const app = express();
 
-  const page = await browser.newPage();
-  await page.goto("https://accounts.google.com/signin/v2/identifier?service=youtube");
+app.get("/", async (req, res) => {
+  try {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+    const page = await browser.newPage();
+    await page.goto("https://www.youtube.com", { waitUntil: "networkidle2" });
 
-  console.log("👉 Please login with your Google account manually...");
+    const cookies = await page.cookies();
+    await browser.close();
 
-  // Wait until user is logged in
-  await page.waitForNavigation({ waitUntil: "networkidle2" });
-  await page.goto("https://www.youtube.com");
+    res.json({ cookies });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  // Get cookies
-  const cookies = await page.cookies();
-
-  // Save cookies.txt format for yt-dlp
-  const cookiesTxt = cookies
-    .map(
-      (c) =>
-        [
-          ".youtube.com", // domain
-          "TRUE",
-          c.path || "/",
-          c.secure ? "TRUE" : "FALSE",
-          Math.floor(c.expires || Date.now() / 1000 + 3600),
-          c.name,
-          c.value,
-        ].join("\t")
-    )
-    .join("\n");
-
-  fs.writeFileSync("cookies.txt", cookiesTxt);
-  console.log("✅ Fresh cookies.txt saved!");
-  
-  await browser.close();
-}
-
-getYoutubeCookies();
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
