@@ -1,8 +1,9 @@
 import express from "express";
-import chromium from "@sparticuz/chromium";
 import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.get("/extract", async (req, res) => {
   const { url } = req.query;
@@ -13,14 +14,13 @@ app.get("/extract", async (req, res) => {
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      executablePath: await chromium.executablePath(),  // ✅ yaha bundled chromium milega
+      headless: true
     });
 
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
 
-    // Example: return page title
     const title = await page.title();
 
     await browser.close();
